@@ -28,7 +28,7 @@ tracks = tracks_dict.xpath("dict").map { |track|
   h
 }
 
-p tracks.map { |t| t['Kind'] }.uniq
+tracks_by_id = tracks.inject({}) { |h,t| h[t['Track ID']] = t; h }
 
 require 'sinatra'
 require 'json'
@@ -48,4 +48,13 @@ get '/aac' do
   content_type :json
   aac = tracks.select { |t| t['Kind'] =~ /AAC audio file/ }
   {count: aac.count, tracks: aac}.to_json
+end
+
+get '/track/:id' do
+  content_type :json
+  tracks_by_id[params[:id].to_i].to_json
+end
+
+get '/track/:id/file' do
+  send_file URI.decode(tracks_by_id[params[:id].to_i]['Location'])[/file:\/\/localhost(.*)/,1]
 end
