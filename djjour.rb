@@ -33,6 +33,8 @@ tracks_by_id = tracks.inject({}) { |h,t| h[t['Track ID']] = t; h }
 require 'sinatra'
 require 'json'
 
+set :port, 1337
+
 def mpeg?(t); t['Kind'] == "MPEG audio file" end
 def aac?(t); t['Kind'] =~ /AAC audio file/ end
 
@@ -67,4 +69,11 @@ get '/track/:id/file' do
   end
 
   send_file URI.decode(track['Location'])[/file:\/\/localhost(.*)/,1]
+end
+
+require 'dnssd'
+require 'socket'
+
+DNSSD.register Socket.gethostname.gsub(/\./,'_'), '_djjour._tcp', nil, 1337 do |r|
+  puts "registered #{r.fullname}" if r.flags.add?
 end
