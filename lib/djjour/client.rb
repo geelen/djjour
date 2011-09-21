@@ -1,6 +1,11 @@
 class DJjour::Client < Sinatra::Base
   set :port, 1337
 
+  # runs once server is booted
+  configure do
+    DJjour::Bonjour.register
+  end
+
   def mpeg?(t); t['Kind'] == "MPEG audio file" end
   def aac?(t); t['Kind'] =~ /AAC audio file/ end
 
@@ -21,12 +26,12 @@ class DJjour::Client < Sinatra::Base
     {count: aac.count, tracks: aac}.to_json
   end
 
-  get '/track/:id' do
+  get '/tracks/:id' do
     content_type :json
     tracks_by_id[params[:id].to_i].to_json
   end
 
-  get '/track/:id/file' do
+  get '/tracks/:id/file' do
     track = tracks_by_id[params[:id].to_i]
     if mpeg?(track)
       content_type 'audio/mpeg'
@@ -39,12 +44,8 @@ class DJjour::Client < Sinatra::Base
 
   private
 
-  def document
-    @document ||= Nokogiri::XML(File.read(File.expand_path("~/Music/iTunes/iTunes Music Library.xml")))
-  end
-
-  def tracks_dict
-    @tracks_dict ||= document.xpath("*/dict/key[contains(text(), 'Tracks')]").first.next_element
+  def tracks_by_id
+    @tracks_by_id ||= tracks.inject({}) { |h,t| h[t['Track ID']] = t; h }
   end
 
   def tracks
@@ -71,7 +72,11 @@ class DJjour::Client < Sinatra::Base
     }
   end
 
-  def tracks_by_id
-    @tracks_by_id ||= tracks.inject({}) { |h,t| h[t['Track ID']] = t; h }
+  def tracks_dict
+    @tracks_dict ||= document.xpath("*/dict/key[contains(text(), 'Tracks')]").first.next_element
+  end
+
+  def document
+    @document ||= Nokogiri::XML(File.read(File.expand_path("~/Music/iTunes/iTunes Music Library.xml")))
   end
 end

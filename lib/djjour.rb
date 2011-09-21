@@ -8,6 +8,7 @@ module DJjour
   #
 end
 
+require 'djjour/bonjour'
 require 'djjour/cli'
 require 'djjour/client'
 require 'djjour/version'
