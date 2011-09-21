@@ -33,6 +33,9 @@ tracks_by_id = tracks.inject({}) { |h,t| h[t['Track ID']] = t; h }
 require 'sinatra'
 require 'json'
 
+def mpeg?(t); t['Kind'] == "MPEG audio file" end
+def aac?(t); t['Kind'] =~ /AAC audio file/ end
+
 get '/' do
   content_type :json
   {count: tracks.count, tracks: tracks}.to_json
@@ -40,13 +43,13 @@ end
 
 get '/mp3' do
   content_type :json
-  mp3 = tracks.select { |t| t['Kind'] == "MPEG audio file" }
+  mp3 = tracks.select(&method(:mpeg?))
   {count: mp3.count, tracks: mp3}.to_json
 end
 
 get '/aac' do
   content_type :json
-  aac = tracks.select { |t| t['Kind'] =~ /AAC audio file/ }
+  aac = tracks.select(&method(:mpeg?))
   {count: aac.count, tracks: aac}.to_json
 end
 
@@ -56,5 +59,12 @@ get '/track/:id' do
 end
 
 get '/track/:id/file' do
-  send_file URI.decode(tracks_by_id[params[:id].to_i]['Location'])[/file:\/\/localhost(.*)/,1]
+  track = tracks_by_id[params[:id].to_i]
+  if mpeg?(track)
+    content_type 'audio/mpeg'
+  else
+    content_type 'audio/aac'
+  end
+
+  send_file URI.decode(track['Location'])[/file:\/\/localhost(.*)/,1]
 end
